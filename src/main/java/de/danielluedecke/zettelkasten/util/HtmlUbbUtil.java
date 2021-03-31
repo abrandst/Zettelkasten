@@ -1355,13 +1355,14 @@ public class HtmlUbbUtil {
             dummy = dummy.replaceAll("(^|\\n)(\\* )(.*)", "<ul><li>$3</li></ul>");
             dummy = dummy.replace("</ul><ul>", "");
             // bold and italic formatting in markdown
-            dummy = dummy.replaceAll("\\*\\*\\*(.*?)\\*\\*\\*", "<b><i>$1</i></b>");
-            dummy = dummy.replaceAll("___(.*?)___", "<b><i>$1</i></b>");
+            dummy = dummy.replaceAll("(?<!\\\\\\\\)\\*\\*\\*(.*?)\\*\\*\\*", "<b><i>$1</i></b>");
+            dummy = dummy.replaceAll("(?<!\\\\\\\\)___(.*?)___", "<b><i>$1</i></b>");
             // bold formatting
-            dummy = dummy.replaceAll("__(.*?)__", "<b>$1</b>");
-            dummy = dummy.replaceAll("\\*\\*(.*?)\\*\\*", "<b>$1</b>");
+            dummy = dummy.replaceAll("(?<!\\\\\\\\)__(.*?)__", "<b>$1</b>");
+            dummy = dummy.replaceAll("(?<!\\\\\\\\)\\*\\*(.*?)\\*\\*", "<b>$1</b>");
             // italic formatting
-            dummy = dummy.replaceAll("_(.*?)_", "<i>$1</i>");
+            dummy = dummy.replaceAll("(?<!\\\\)_(.*?)_", "<i>$1</i>");
+            dummy = dummy.replaceAll("\\\\_", "_");
             dummy = dummy.replaceAll("\\*(.*?)\\*", "<i>$1</i>");
             // headlines
             dummy = dummy.replaceAll("(^|\\n)#{4} (.*)", head4md);
