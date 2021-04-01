@@ -55,6 +55,11 @@ import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import org.jdom2.Element;
 
+import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.parser.Parser;
+import com.vladsch.flexmark.util.ast.Node;
+import com.vladsch.flexmark.util.data.MutableDataSet;
+
 /**
  * This class is responsible for the creation of a html page of an zettelkasten
  * entry which is then displayed in the main window's JEditorPane.
@@ -1317,143 +1322,13 @@ public class HtmlUbbUtil {
     }
 
     private static String replaceUbbToHtml(String dummy, boolean isMarkdownActivated, boolean isDesktop, boolean isExport) {
-        // replace headlines
-        String head1, head2, head3, head4;
-        String head1md, head2md, head3md, head4md;
-        if (isDesktop) {
-            head1 = "<h3>$1</h3>";
-            head2 = "<h4>$1</h4>";
-            head3 = "<h5>$1</h5>";
-            head4 = "<h6>$1</h6>";
-            head1md = "$1<h3>$2</h3>";
-            head2md = "$1<h4>$2</h4>";
-            head3md = "$1<h5>$2</h5>";
-            head4md = "$1<h6>$2</h6>";
-        } else {
-            head1 = "<h2>$1</h2>";
-            head2 = "<h3>$1</h3>";
-            head3 = "<h4>$1</h4>";
-            head4 = "<h5>$1</h5>";
-            head1md = "$1<h2>$2</h2>";
-            head2md = "$1<h3>$2</h3>";
-            head3md = "$1<h4>$2</h4>";
-            head4md = "$1<h5>$2</h5>";
-        }
-        // check whether markdown is activated
-        // if yes, replace markdown here
-        if (isMarkdownActivated) {
-            dummy = dummy.replace("[br]", "\n");
-            // quotes
-            dummy = dummy.replaceAll("(^|\\n)(\\> )(.*)", "[q]$3[/q]");
-            // after quotes have been replaced, replace < and > signs
-            if (!isExport) {
-                dummy = dummy.replace(">", "&gt;").replace("<", "&lt;");
-            }
-            // bullets
-            dummy = dummy.replaceAll("(^|\\n)(\\d\\. )(.*)", "<ol><li>$3</li></ol>");
-            dummy = dummy.replace("</ol><ol>", "");
-            dummy = dummy.replaceAll("(^|\\n)(\\* )(.*)", "<ul><li>$3</li></ul>");
-            dummy = dummy.replace("</ul><ul>", "");
-            // bold and italic formatting in markdown
-            dummy = dummy.replaceAll("(?<!\\\\\\\\)\\*\\*\\*(.*?)\\*\\*\\*", "<b><i>$1</i></b>");
-            dummy = dummy.replaceAll("(?<!\\\\\\\\)___(.*?)___", "<b><i>$1</i></b>");
-            // bold formatting
-            dummy = dummy.replaceAll("(?<!\\\\\\\\)__(.*?)__", "<b>$1</b>");
-            dummy = dummy.replaceAll("(?<!\\\\\\\\)\\*\\*(.*?)\\*\\*", "<b>$1</b>");
-            // italic formatting
-            dummy = dummy.replaceAll("(?<!\\\\)_(.*?)_", "<i>$1</i>");
-            dummy = dummy.replaceAll("\\\\_", "_");
-            dummy = dummy.replaceAll("\\*(.*?)\\*", "<i>$1</i>");
-            // headlines
-            dummy = dummy.replaceAll("(^|\\n)#{4} (.*)", head4md);
-            dummy = dummy.replaceAll("(^|\\n)#{3} (.*)", head3md);
-            dummy = dummy.replaceAll("(^|\\n)#{2} (.*)", head2md);
-            dummy = dummy.replaceAll("(^|\\n)#{1} (.*)", head1md);
-            // strike
-            dummy = dummy.replaceAll("---(.*?)---", "<strike>$1</strike>");
-            // images
-            // TODO Img tag nach oben, vor kursiv format, und _ im Dateinamen durch "´:`" o.ä. (bevor Matthias meckert, 100-Zeichenfolge!) ersetzen
-            dummy = dummy.replaceAll("[!]{1}\\[([^\\[]+)\\]\\(([^\\)]+)\\)", "[img]$2[/img]");
-            // we need to fix emphasing in image tags. if image file path has
-            // underscores, these have been replaced to italic / bold etc.
-            dummy = fixBrokenTags(dummy, "\\[img\\]([^|]*)(.*?)\\[/img\\]");
-            dummy = fixBrokenTags(dummy, "\\(http://([^\\)]+)\\)");
-            // replace line breaks
-            dummy = dummy.replace("\n", "[br]");
-        } else {
-            // if we don't have markdown, and thus no quotes-syntax with "> ...",
-            // we need to replace non-tag-< and > here
-            if (!isExport) {
-                dummy = dummy.replace(">", "&gt;").replace("<", "&lt;");
-            }
-        }
-        // inline-code blocks formatting
-        dummy = dummy.replaceAll("\\`(.*?)\\`", "<code>$1</code>");
-        // new line
-        dummy = dummy.replace("[br]", "<br>");
-        // hyperlinks
-        dummy = dummy.replaceAll("\\[([^\\[]+)\\]\\(http([^\\)]+)\\)", "<a href=\"http$2\" title=\"http$2\">$1</a>");
-        // bold formatting: [f] becomes <b>
-        dummy = dummy.replaceAll("\\[f\\](.*?)\\[/f\\]", "<b>$1</b>");
-        // italic formatting: [k] becomes <i>
-        dummy = dummy.replaceAll("\\[k\\](.*?)\\[/k\\]", "<i>$1</i>");
-        // underline formatting: [u] becomes <u>
-        dummy = dummy.replaceAll("\\[u\\](.*?)\\[/u\\]", "<u>$1</u>");
-        // headline: [h4] becomes <h5>
-        dummy = dummy.replaceAll("\\[h4\\](.*?)\\[/h4\\]", head4);
-        // headline: [h3] becomes <h4>
-        dummy = dummy.replaceAll("\\[h3\\](.*?)\\[/h3\\]", head3);
-        // headline: [h2] becomes <h3>
-        dummy = dummy.replaceAll("\\[h2\\](.*?)\\[/h2\\]", head2);
-        // headline: [h1] becomes <h2>
-        dummy = dummy.replaceAll("\\[h1\\](.*?)\\[/h1\\]", head1);
-        // cite formatting: [q] becomes <q>
-        if (isExport) {
-            dummy = dummy.replaceAll("\\[q\\](.*?)\\[/q\\]", "<blockquote>$1</blockquote>");
-            // quotation marks
-            dummy = dummy.replaceAll("\\[qm\\](.*?)\\[/qm\\]", "<q>$1</q>");
-        } else {
-            dummy = dummy.replaceAll("\\[q\\](.*?)\\[/q\\]", "<div class=\"zitat\">$1</div>");
-            // quotation marks
-            dummy = dummy.replace("[qm]", "&ldquo;");
-            dummy = dummy.replace("[/qm]", "&rdquo;");
-        }
-        // code blocks formatting: [code] becomes <pre>
-        dummy = dummy.replaceAll("\\[code\\](.*?)\\[/code\\]", "<pre>$1</pre>");
-        // strike-through formatting: [d] becomes <strike>
-        dummy = dummy.replaceAll("\\[d\\](.*?)\\[/d\\]", "<strike>$1</strike>");
-        // superscript: [sup] becomes <sup>
-        dummy = dummy.replaceAll("\\[sup\\](.*?)\\[/sup\\]", "<sup>$1</sup>");
-        // subscript: [sub] becomes <sub>
-        dummy = dummy.replaceAll("\\[sub\\](.*?)\\[/sub\\]", "<sub>$1</sub>");
-        // font
-        dummy = dummy.replaceAll("\\[font ([^\\[]*)\\](.*?)\\[/font\\]", "<span style=\"font-family:$1\">$2</span>");
-        // center alignment: [c] becomes <center>
-        dummy = dummy.replaceAll("\\[c\\](.*?)\\[/c\\]", "<div style=\"text-align:center\">$1</div>");
-        // left alignment
-        dummy = dummy.replaceAll("\\[al\\](.*?)\\[/al\\]", "<div style=\"text-align:left\">$1</div>");
-        // right alignment
-        dummy = dummy.replaceAll("\\[ar\\](.*?)\\[/ar\\]", "<div style=\"text-align:right\">$1</div>");
-        // justify alignment
-        dummy = dummy.replaceAll("\\[ab\\](.*?)\\[/ab\\]", "<div style=\"text-align:justify\">$1</div>");
-        // color formatting: [color #rrggbb] becomes <span style="color:#rrggbb"> ([^\\[]*)
-        dummy = dummy.replaceAll("\\[color ([^\\[]*)\\](.*?)\\[/color\\]", "<span style=\"color:$1\">$2</span>");
-        // background-color formatting: [h #rrggbb] becomes <span style="background-color:#rrggbb">
-        dummy = dummy.replaceAll("\\[h ([^\\[]*)\\](.*?)\\[/h\\]", "<span style=\"background-color:$1\">$2</span>");
-        // margins formatting: [m 0.5] becomes <span style="margin-left:0.5cm;margin-right:0.5cm">
-        // dummy = dummy.replaceAll("\\[m ([^\\[]*)\\]([^\\[]*)\\[/m\\]", "<div style=\"margin-left:$1cm;margin-right:$1cm\">$2</div>");
-        dummy = dummy.replaceAll("\\[m ([^\\[]*)\\](.*?)\\[/m\\]", "<div style=\"margin-left:$1cm;margin-right:$1cm\">$2</div>");
-        // unordered list: [l] becomes <ul>
-        dummy = dummy.replaceAll("\\[l\\](.*?)\\[/l\\]", "<ul>$1</ul>");
-        // ordered list: [n] becomes <ol>
-        dummy = dummy.replaceAll("\\[n\\](.*?)\\[/n\\]", "<ol>$1</ol>");
-        // bullet points: [*] becomes <li>
-        dummy = dummy.replaceAll("\\[\\*\\](.*?)\\[/\\*\\]", "<li>$1</li>");
-        // manual links
-        dummy = dummy.replaceAll("\\[z ([^\\[]*)\\](.*?)\\[/z\\]", "<a class=\"manlink\" href=\"#z_$1\">$2</a>");
-        // remove all new lines after headlines
-        dummy = dummy.replaceAll("\\</h([^\\<]*)\\>\\<br\\>", "</h$1>");
-        return dummy;
+    	MutableDataSet options = new MutableDataSet();
+        com.vladsch.flexmark.parser.Parser parser = Parser.builder(options).build();
+        HtmlRenderer renderer = HtmlRenderer.builder(options).build();
+        Node document = parser.parse(dummy);
+        String html = renderer.render(document);  
+        return html;
+        
     }
 
     private static String fixBrokenTags(String content, String regexpattern) {
@@ -1496,27 +1371,7 @@ public class HtmlUbbUtil {
     
     public static String replaceHtmlToUbb(String dummy) {
         // new line
-        dummy = dummy.replace("<br>", "[br]");
-        dummy = dummy.replace("<br/>", "[br]");
-        dummy = dummy.replace("<br />", "[br]");
-        // bold formatting: [f] becomes <b>
-        dummy = dummy.replaceAll("\\<b\\>(.*?)\\</b\\>", "[f]$1[/f]");
-        dummy = dummy.replaceAll("\\<strong\\>(.*?)\\</strong\\>", "[f]$1[/f]");
-        // italic formatting: [k] becomes <i>
-        dummy = dummy.replaceAll("\\<i\\>(.*?)\\</i\\>", "[k]$1[/k]");
-        dummy = dummy.replaceAll("\\<em\\>(.*?)\\</em\\>", "[k]$1[/k]");
-        // underline formatting: [u] becomes <u>
-        dummy = dummy.replaceAll("\\<u\\>(.*?)\\</u\\>", "[u]$1[/u]");
-        // headlines
-        dummy = dummy.replaceAll("\\<h1\\>(.*?)\\</h1\\>", "[h1]$1[/h1]");
-        dummy = dummy.replaceAll("\\<h2\\>(.*?)\\</h2\\>", "[h2]$1[/h2]");
-        dummy = dummy.replaceAll("\\<h3\\>(.*?)\\</h3\\>", "[h3]$1[/h3]");
-        dummy = dummy.replaceAll("\\<h4\\>(.*?)\\</h4\\>", "[h4]$1[/h4]");
-        dummy = dummy.replaceAll("\\<h5\\>(.*?)\\</h5\\>", "[h5]$1[/h5]");
-        // lists
-        dummy = dummy.replaceAll("\\<ul\\>(.*?)\\</ul\\>", "[l]$1[/l]");
-        dummy = dummy.replaceAll("\\<ol\\>(.*?)\\</ol\\>", "[n]$1[/n]");
-        dummy = dummy.replaceAll("\\<li\\>(.*?)\\</li\\>", "[*]$1[/*]");
+        
         return dummy;
     }
 

@@ -310,6 +310,11 @@
             <version>1.18.4</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+        	<groupId>com.vladsch.flexmark</groupId>
+        	<artifactId>flexmark-all</artifactId>
+        	<version>0.62.2</version>
+        </dependency>
     </dependencies>
 
     <repositories>

@@ -156,18 +156,7 @@ public class Tools {
      * {@code [br]}, tabs {@code &#9;} etc.
      */
     public static String replaceUnicodeToUbb(String text) {
-        if (text != null && !text.isEmpty()) {
-            // check whether the line-seperator has 2 chars. if so, remove first char...
-            if (System.lineSeparator().contains("\r")) {
-                text = text.replace("\r", "");
-            }
-            // ...only then this replacement will work
-            text = text.replace("\n", "[br]");
-            // replace all "tabs" with "real" tabs
-            text = text.replace("\t", "&#9;");
-            // replace all bullet-codes with "real" bullets
-            text = text.replace(String.valueOf((char) 8226), "&#8226;");
-        }
+        
         return text;
     }
 
@@ -1193,81 +1182,12 @@ public class Tools {
      * Zettelkasten.
      */
     public static String convertMarkDown2UBB(String dummy) {
-        dummy = dummy.replace("[br]", "\n");
-        // quotes
-        dummy = dummy.replaceAll("(^|\\n)(\\> )(.*)", "[q]$3[/q]");
-        // bullets
-        dummy = dummy.replaceAll("(^|\\n)(\\d\\. )(.*)", "[n][*]$3[/*][/n]");
-        dummy = dummy.replace("[/n][n]", "");
-        dummy = dummy.replaceAll("(^|\\n)(\\* )(.*)", "[l][*]$3[/*][/l]");
-        dummy = dummy.replace("[/l][l]", "");
-        // bold and italic formatting in markdown
-        dummy = dummy.replaceAll("\\*\\*\\*(.*?)\\*\\*\\*", "[f][k]$1[/k][/f]");
-        dummy = dummy.replaceAll("___(.*?)___", "[f][k]$1[/k][/f]");
-        // bold formatting
-        dummy = dummy.replaceAll("__(.*?)__", "[f]$1[/f]");
-        dummy = dummy.replaceAll("\\*\\*(.*?)\\*\\*", "[f]$1[/f]");
-        // italic formatting
-        dummy = dummy.replaceAll("_(.*?)_", "[k]$1[/k]");
-
-        dummy = dummy.replaceAll("\\*(.*?)\\*", "[k]$1[/k]");
-        // code blocks formatting
-        dummy = dummy.replaceAll("\\`(.*?)\\`", "[code]$1[/code]");
-        // headlines
-        dummy = dummy.replaceAll("(^|\\n)#{4} (.*)", "[h4]$2[/h4]");
-        dummy = dummy.replaceAll("(^|\\n)#{3} (.*)", "[h3]$2[/h3]");
-        dummy = dummy.replaceAll("(^|\\n)#{2} (.*)", "[h2]$2[/h2]");
-        dummy = dummy.replaceAll("(^|\\n)#{1} (.*)", "[h1]$2[/h1]");
-        // strike
-        dummy = dummy.replaceAll("---(.*?)---", "[d]$1[/d]");
-        // images
-        dummy = dummy.replaceAll("[!]{1}\\[([^\\[]+)\\]\\(([^\\)]+)\\)", "[img]$2[/img]");
-        dummy = dummy.replace("\n", "[br]");
+       
         return dummy;
     }
 
     public static String convertUBB2MarkDown(String dummy) {
-        // bold formatting: [f] becomes <b>
-        dummy = dummy.replaceAll("\\[f\\](.*?)\\[/f\\]", "**$1**");
-        // italic formatting: [k] becomes <i>
-        dummy = dummy.replaceAll("\\[k\\](.*?)\\[/k\\]", "*$1*");
-        // headline: [h4] becomes <h5>
-        dummy = dummy.replaceAll("\\[h4\\](.*?)\\[/h4\\]", "#### $1");
-        // headline: [h3] becomes <h4>
-        dummy = dummy.replaceAll("\\[h3\\](.*?)\\[/h3\\]", "### $1");
-        // headline: [h2] becomes <h3>
-        dummy = dummy.replaceAll("\\[h2\\](.*?)\\[/h2\\]", "## $1");
-        // headline: [h1] becomes <h2>
-        dummy = dummy.replaceAll("\\[h1\\](.*?)\\[/h1\\]", "# $1");
-        // cite formatting: [q] becomes <q>
-        dummy = dummy.replaceAll("\\[q\\](.*?)\\[/q\\]", "> $1");
-        // code formatting: [code] becomes `
-        dummy = dummy.replaceAll("\\[code\\](.*?)\\[/code\\]", "`$1`");
-        // strike-through formatting: [d] becomes <strike>
-        dummy = dummy.replaceAll("\\[d\\](.*?)\\[/d\\]", "---$1---");
-        /*
-         try {
-         // unordered list: [l] becomes <ul>
-         Pattern p = Pattern.compile("\\[l\\](.*?)\\[/l\\]");
-         // find all list-bullets inside
-         Matcher m = p.matcher(dummy);
-         while (m.find()) {
-         String tmp = "[br]"+dummy.substring(m.start(), m.end());
-         tmp = tmp.replace("[*]", "* [br]");
-         dummy = dummy.substring(0, m.start())+tmp+dummy.substring(m.end());
-         }
-         }
-         catch (IndexOutOfBoundsException ex) {
-
-         }
-         */
-        dummy = dummy.replaceAll("\\[l\\](.*?)\\[/l\\]", "$1");
-        // ordered list: [n] becomes <ol>
-        dummy = dummy.replaceAll("\\[n\\](.*?)\\[/n\\]", "$1");
-        // bullet points: [*] becomes <li>
-        dummy = dummy.replaceAll("\\[\\*\\](.*?)\\[/\\*\\]", "* $1[br]");
-        // image
-        dummy = dummy.replaceAll("\\[img\\](.*?)\\[/img\\]", "![Bild]($1)");
+        
         return dummy;
     }
 
@@ -1312,107 +1232,9 @@ public class Tools {
      * contain any UBB-Format-tags
      */
     public static String removeUbbFromString(String content, boolean includeMarkdown) {
-        String dummy = "";
-        if (content != null && !content.isEmpty()) {
-            dummy = content.replaceAll("\\[k\\]", "")
-                    .replaceAll("\\[f\\]", "")
-                    .replaceAll("\\[u\\]", "")
-                    .replaceAll("\\[h1\\]", "")
-                    .replaceAll("\\[h2\\]", "")
-                    .replaceAll("\\[h3\\]", "")
-                    .replaceAll("\\[h4\\]", "")
-                    .replaceAll("\\[q\\]", "")
-                    .replaceAll("\\[d\\]", "")
-                    .replaceAll("\\[c\\]", "")
-                    .replaceAll("\\[code\\]", "")
-                    .replaceAll("\\[sup\\]", "")
-                    .replaceAll("\\[sub\\]", "")
-                    .replaceAll("\\[/k\\]", "")
-                    .replaceAll("\\[/f\\]", "")
-                    .replaceAll("\\[/u\\]", "")
-                    .replaceAll("\\[/h1\\]", "")
-                    .replaceAll("\\[/h2\\]", "")
-                    .replaceAll("\\[/h3\\]", "")
-                    .replaceAll("\\[/h4\\]", "")
-                    .replaceAll("\\[/q\\]", "")
-                    .replaceAll("\\[/d\\]", "")
-                    .replaceAll("\\[/c\\]", "")
-                    .replaceAll("\\[/code\\]", "")
-                    .replaceAll("\\[/sup\\]", "")
-                    .replaceAll("\\[/sub\\]", "");
-            dummy = dummy.replaceAll("\\[img\\](.*?)\\[/img\\]", "");
-            dummy = dummy.replaceAll("\\[fn ([^\\[]*)\\]", "[FN $1]");
-            dummy = dummy.replaceAll("\\[form ([^\\[]*)\\]", "$1");
-            dummy = dummy.replaceAll("\\[color ([^\\[]*)\\](.*?)\\[/color\\]", "$2");
-            dummy = dummy.replaceAll("\\[font ([^\\[]*)\\](.*?)\\[/font\\]", "$2");
-            dummy = dummy.replaceAll("\\[h ([^\\[]*)\\](.*?)\\[/h\\]", "$2");
-            dummy = dummy.replaceAll("\\[m ([^\\[]*)\\](.*?)\\[/m\\]", "$2");
-            dummy = dummy.replaceAll("\\[n\\](.*?)\\[/n\\]", "$1");
-            dummy = dummy.replaceAll("\\[l\\](.*?)\\[/l\\]", "$1");
-            dummy = dummy.replaceAll("\\[\\*\\](.*?)\\[/\\*\\]", "- $1\n");
-            dummy = dummy.replaceAll("\\[tc\\](.*?)\\[/tc\\]", "$1");
-            // check whether only ubb or also markdown tags should be removed
-            if (includeMarkdown) {
-                // quotes
-                dummy = dummy.replaceAll("(?<=\\[br\\])(\\> )(.*?)\\[br\\]", "$2[br]");
-                // bold and italic formatting in markdown
-                dummy = dummy.replaceAll("\\*\\*\\*(.*?)\\*\\*\\*", "$1");
-                dummy = dummy.replaceAll("___(.*?)___", "$1");
-                // bold formatting
-                dummy = dummy.replaceAll("__(.*?)__", "$1");
-                dummy = dummy.replaceAll("\\*\\*(.*?)\\*\\*", "$1");
-                // italic formatting
-                dummy = dummy.replaceAll("_(.*?)_", "$1");
-                dummy = dummy.replaceAll("\\*(.*?)\\*", "$1");
-                // headlines
-                dummy = dummy.replaceAll("#{4} (.*?)\\[br\\]", "$1");
-                dummy = dummy.replaceAll("#{3} (.*?)\\[br\\]", "$1");
-                dummy = dummy.replaceAll("#{2} (.*?)\\[br\\]", "$1");
-                dummy = dummy.replaceAll("#{1} (.*?)\\[br\\]", "$1");
-                // strike
-                dummy = dummy.replaceAll("---(.*?)---", "$1");
-                // code
-                dummy = dummy.replaceAll("\\`(.*?)\\`", "$1");
-                // images
-                dummy = dummy.replaceAll("[!]{1}\\[([^\\[]+)\\]\\(([^\\)]+)\\)", "");
-                // hyperlinks
-                dummy = dummy.replaceAll("\\[([^\\[]+)\\]\\(([^\\)]+)\\)", "$1 ($2)");
-                // bullets
-                dummy = dummy.replaceAll("(^|\\n)(\\d\\. )(.*)", "- $3");
-                dummy = dummy.replaceAll("(^|\\n)(\\* )(.*)", "- $3");
-            }
-            dummy = dummy.replace("[br]", System.lineSeparator());
-            // convert tables. we don't do this with regular expressions
-            // first, init the index-variable
-            int pos = 0;
-            int end;
-            // go and find all table-tages
-            while (pos != -1) {
-                // find occurence of opening-tag
-                pos = dummy.indexOf("[table]", pos);
-                // when open-tag was found, go on and find end of table-tag
-                if (pos != -1) {
-                    // find closing-tag
-                    end = dummy.indexOf("[/table]", pos);
-                    // if closing-tag also found, convert content to table
-                    if (end != -1) {
-                        try {
-                            // get table-content
-                            String tablecontent = dummy.substring(pos + 7, end).replaceAll("\\|", "\t").replaceAll("\\^", "\t");
-                            dummy = dummy.substring(0, pos) + tablecontent + dummy.substring(end + 8);
-                            pos = 0;
-                        } catch (IndexOutOfBoundsException ex) {
-                        }
-                    } // if no valid end-tag was found, try to find possible
-                    // next table tage
-                    else {
-                        pos = pos + 7;
-                    }
-                }
-            }
-        }
+       
 
-        return dummy;
+        return content;
     }
 
     /**
