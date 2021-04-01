@@ -1232,8 +1232,7 @@ public class Tools {
      * contain any UBB-Format-tags
      */
     public static String removeUbbFromString(String content, boolean includeMarkdown) {
-       
-
+      
         return content;
     }
 

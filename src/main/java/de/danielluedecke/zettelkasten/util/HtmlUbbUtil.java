@@ -55,9 +55,12 @@ import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import org.jdom2.Element;
 
+import com.vladsch.flexmark.ext.tables.TablesExtension;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
+import com.vladsch.flexmark.util.ast.KeepType;
 import com.vladsch.flexmark.util.ast.Node;
+import com.vladsch.flexmark.util.data.DataSet;
 import com.vladsch.flexmark.util.data.MutableDataSet;
 
 /**
@@ -940,8 +943,6 @@ public class HtmlUbbUtil {
         dummy = convertHyperlinks(dummy);
         // convert images, including resizing images
         dummy = convertImages(dataObj, settings, dummy, isExport);
-        // convert possible table tags to html
-        dummy = convertTablesToHTML(dummy);
         // convert possible form tags to html
         dummy = convertForms(settings, dataObj, dummy, Constants.EXP_TYPE_HTML, false, isExport);
         // if parameters in the string array highlight-terms have been passed, we assume that
@@ -1322,7 +1323,17 @@ public class HtmlUbbUtil {
     }
 
     private static String replaceUbbToHtml(String dummy, boolean isMarkdownActivated, boolean isDesktop, boolean isExport) {
-    	MutableDataSet options = new MutableDataSet();
+    	DataSet options = new MutableDataSet().set(Parser.REFERENCES_KEEP, KeepType.LAST)
+                .set(HtmlRenderer.INDENT_SIZE, 2)
+                .set(HtmlRenderer.PERCENT_ENCODE_URLS, true)
+
+                // for full GFM table compatibility add the following table extension options:
+                .set(TablesExtension.COLUMN_SPANS, false)
+                .set(TablesExtension.APPEND_MISSING_COLUMNS, true)
+                .set(TablesExtension.DISCARD_EXTRA_COLUMNS, true)
+                .set(TablesExtension.HEADER_SEPARATOR_COLUMN_MATCH, true)
+                .set(Parser.EXTENSIONS, Arrays.asList(TablesExtension.create()))
+                .toImmutable();
         com.vladsch.flexmark.parser.Parser parser = Parser.builder(options).build();
         HtmlRenderer renderer = HtmlRenderer.builder(options).build();
         Node document = parser.parse(dummy);
