@@ -39,6 +39,7 @@ import com.vladsch.flexmark.ext.enumerated.reference.EnumeratedReferenceExtensio
 import com.vladsch.flexmark.ext.footnotes.FootnoteExtension;
 import com.vladsch.flexmark.ext.gfm.strikethrough.StrikethroughSubscriptExtension;
 import com.vladsch.flexmark.ext.gfm.tasklist.TaskListExtension;
+import com.vladsch.flexmark.ext.gitlab.GitLabExtension;
 import com.vladsch.flexmark.ext.ins.InsExtension;
 import com.vladsch.flexmark.ext.tables.TablesExtension;
 import com.vladsch.flexmark.ext.yaml.front.matter.YamlFrontMatterExtension;
@@ -590,6 +591,23 @@ public class HtmlUbbUtil {
         // initiate html-page, header
         // ***********************************************
         retval.append("<html><head>").append(System.lineSeparator()); // NEW!
+        retval.append("<link rel=\"stylesheet\" href=\"katex.min.css\">");
+        retval.append("<script src=\"https://cdn.jsdelivr.net/npm/katex@0.13.1/dist/katex.min.js\"></script>");
+        retval.append("<script src=\"mermaid.min.js\"></script>");
+        retval.append("<script>\n"
+        		+ "    (function () {\n"
+        		+ "      document.addEventListener(\"DOMContentLoaded\", function () {\n"
+        		+ "        var mathElems = document.getElementsByClassName(\"katex\");\n"
+        		+ "        var elems = [];\n"
+        		+ "        for (const i in mathElems) {\n"
+        		+ "            if (mathElems.hasOwnProperty(i)) elems.push(mathElems[i]);\n"
+        		+ "        }\n"
+        		+ "\n"
+        		+ "        elems.forEach(elem => {\n"
+        		+ "            katex.render(elem.textContent, elem, { throwOnError: false, displayMode: elem.nodeName !== 'SPAN', });\n"
+        		+ "        });\n"
+        		+ "    });\n"
+        		+ "})();)");
         // first of all, prepare the header and style information of the main content
         retval.append("<style>").append(System.lineSeparator());
         // get the common style definition for the basic-tags
@@ -1008,8 +1026,8 @@ public class HtmlUbbUtil {
                 }
             }
         }
-
-        dummy = Jsoup.clean(dummy, relaxedWithoutImageProtocol());
+        
+      dummy = Jsoup.clean(dummy, "http://base.uri",relaxedWithoutImageProtocol());
 
         return dummy;
     }
@@ -1396,18 +1414,15 @@ public class HtmlUbbUtil {
         // we have to bypass the BBProcessor.
         dummy = dummy.replace("table]","table-bp]");
         dummy = dummy.replace("img]","img-bp]");
-        TextProcessor processor = BBProcessorFactory.getInstance().create();
-        dummy = processor.process(dummy);
+       
+        
         dummy = dummy.replace("table-bp]","table]");
         dummy = dummy.replace("img-bp]","img]");
 
-        //modern browsers apparently don't render &#9; anymore, thus this is likely to fail in
-        //the future. Also this is not supported by markdown. In order to provide a similar experience, replace
-        //the tabstop with 8 spaces
-        dummy = dummy.replace("\t", new String(new char[8]).replace("\0", "&nbsp;"));
+        
 
         // inline-code blocks formatting
-        dummy = dummy.replaceAll("\\`(.*?)\\`", "<code>$1</code>");
+        //dummy = dummy.replaceAll("\\`(.*?)\\`", "<code>$1</code>");
 
         // hyperlinks
         dummy = dummy.replaceAll("(?<!!)\\[([^\\[]+)\\]\\(http([^\\)]+)\\)", "<a href=\"http$2\" title=\"http$2\">$1</a>");
@@ -1513,7 +1528,8 @@ public class HtmlUbbUtil {
                             TaskListExtension.create(),
                             InsExtension.create(),
                             YamlFrontMatterExtension.create(),
-                            DefinitionExtension.create()
+                            DefinitionExtension.create(),
+                            GitLabExtension.create()
                             )
                             )
                     .toImmutable();
@@ -2807,7 +2823,25 @@ public class HtmlUbbUtil {
         // which is being display in the main window's "entry textfield"
         StringBuilder retval = new StringBuilder("");
         // first of all, prepare the header and style information of the main content
-        retval.append("<html><head><style>").append(System.lineSeparator());
+        retval.append("<html><head>");
+        retval.append("<link rel=\"stylesheet\" href=\"katex.min.css\">");
+        retval.append("<script src=\"https://cdn.jsdelivr.net/npm/katex@0.13.1/dist/katex.min.js\"></script>");
+        retval.append("<script src=\"mermaid.min.js\"></script>");
+        retval.append("<script>\n"
+        		+ "    (function () {\n"
+        		+ "      document.addEventListener(\"DOMContentLoaded\", function () {\n"
+        		+ "        var mathElems = document.getElementsByClassName(\"katex\");\n"
+        		+ "        var elems = [];\n"
+        		+ "        for (const i in mathElems) {\n"
+        		+ "            if (mathElems.hasOwnProperty(i)) elems.push(mathElems[i]);\n"
+        		+ "        }\n"
+        		+ "\n"
+        		+ "        elems.forEach(elem => {\n"
+        		+ "            katex.render(elem.textContent, elem, { throwOnError: false, displayMode: elem.nodeName !== 'SPAN', });\n"
+        		+ "        });\n"
+        		+ "    });\n"
+        		+ "})();)");
+        retval.append("<style>").append(System.lineSeparator());
         // get the common style definition for the basic-tags
         retval.append(getCommonStyleDefinition(settings, true, true, false));
         // body-tag with main font settings
@@ -3062,11 +3096,11 @@ public class HtmlUbbUtil {
         return retval.toString();
     }
 
-    public static Whitelist relaxedWithoutImageProtocol() {
+    public static Whitelist relaxedWithoutImageProtocol() {    	
         return new Whitelist()
                 .addTags(
                         "a", "b", "blockquote", "br", "caption", "cite", "code", "col",
-                        "colgroup", "dd", "div", "dl", "dt", "em", "h1", "h2", "h3", "h4", "h5", "h6",
+                        "colgroup", "dd", "div", "dl", "dt", "em", "h1", "h2", "h3", "h4", "h5", "h6","href",
                         "i", "img", "li", "ol", "p", "pre", "q", "small", "span", "strike", "strong",
                         "sub", "sup", "table", "tbody", "td", "tfoot", "th", "thead", "tr", "u",
                         "ul")
@@ -3090,6 +3124,8 @@ public class HtmlUbbUtil {
                 .addProtocols("blockquote", "cite", "http", "https")
                 .addProtocols("cite", "cite", "http", "https")
                 .addProtocols("q", "cite", "http", "https")
+                .preserveRelativeLinks(true)
+                
                 ;
     }
 }
